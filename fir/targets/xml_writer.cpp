@@ -429,6 +429,14 @@ void fir::xml_writer::do_while_node(fir::while_node * const node, int lvl) {
   closeTag(node, lvl);
 }
 
+void fir::xml_writer::do_unless_iterate_node(fir::unless_iterate_node * const node, int lvl) {
+  // TODO
+}
+
+void fir::xml_writer::do_call_on_node(fir::call_on_node * const node, int lvl) {
+  // TODO
+}
+
 //---------------------------------------------------------------------------
 
 void fir::xml_writer::do_if_node(fir::if_node * const node, int lvl) {

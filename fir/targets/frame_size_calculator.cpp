@@ -143,6 +143,16 @@ void fir::frame_size_calculator::do_while_node(fir::while_node *const node, int 
   if(node->finally_block()) node->finally_block()->accept(this, lvl + 2);
 }
 
+void fir::frame_size_calculator::do_unless_iterate_node(fir::unless_iterate_node *const node, int lvl) {
+  // tmp var size int
+  _localsize += 4;
+}
+
+void fir::frame_size_calculator::do_call_on_node(fir::call_on_node *const node, int lvl) {
+  // tmp var size int
+  _localsize += 4;
+}
+
 void fir::frame_size_calculator::do_if_node(fir::if_node *const node, int lvl) {
   node->block()->accept(this, lvl + 2);
 }

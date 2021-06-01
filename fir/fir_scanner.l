@@ -49,6 +49,19 @@ SPACE     ([ \t\r]|\n)
 "do"                    return tDO;
 "finally"               return tFINALLY;
 
+    /* ------------------------------ Early-bird --------------------------- */
+
+"unless"                return tUNLESS;
+"iterate"               return tITERATE;
+"for"                   return tFOR;
+"using"                 return tUSING;
+
+"call"                  return tCALL;
+"on"                    return tON;
+".."                    return tRANGE;
+
+[:]                     return *yytext;
+
     /* ------------------------------ Condicional ---------------------- */
 
 "if"                   return tIF; 

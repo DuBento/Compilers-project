@@ -53,6 +53,9 @@
 %token tDEFAULT_VAL tEPILOGUE
 %token tSIZEOF tGE tLE tEQ tNE tNOT tAND tOR
 
+%token tUNLESS tITERATE tFOR tUSING
+%token tCALL tON tRANGE
+
 %nonassoc tIFX
 %nonassoc tELSE
 
@@ -218,6 +221,8 @@ instruction     : expr              ';'                             { $$ = new f
                 | tIF expr tTHEN instruction tELSE instruction      { $$ = new fir::if_else_node(LINE, $2, $4, $6); }
                 | tWHILE expr tDO instruction %prec tWHILEX         { $$ = new fir::while_node(LINE, $2, $4); }
                 | tWHILE expr tDO instruction tFINALLY instruction  { $$ = new fir::while_node(LINE, $2, $4, $6); }
+                | tUNLESS expr tITERATE lvalue tFOR tINTEGER tUSING tIDENTIFIER  { $$ = new fir::unless_iterate_node(LINE, $2, $4, $6, *$8); delete $8; }
+                | tCALL tIDENTIFIER tON lvalue ':' tINTEGER tRANGE tINTEGER  { $$ = new fir::call_on_node(LINE, *$2, $4, $6, $8); delete $2; }
                 | block                                             { $$ = $1; }
                 ;
 

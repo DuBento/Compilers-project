@@ -646,6 +646,60 @@ void fir::type_checker::do_while_node(fir::while_node *const node, int lvl) {
   if (node->finally_block()) node->finally_block()->accept(this, lvl + 4);
 }
 
+void fir::type_checker::do_unless_iterate_node(fir::unless_iterate_node *const node, int lvl) {
+  node->condition()->accept(this, lvl + 4);
+  if (node->condition()->is_typed(cdk::TYPE_UNSPEC)) {
+    fir::read_node *read_node = dynamic_cast<fir::read_node *>(node->condition());
+    if (read_node)
+      node->condition()->type(cdk::primitive_type::create(4, cdk::TYPE_INT));  // only allow ints
+  }
+  
+  node->vec()->accept(this, lvl + 4);
+  if (!node->vec()->is_typed(cdk::TYPE_POINTER)) throw std::string("vec needs to be type pointer");
+  
+  if (node->iter() < 0) {
+    throw std::string("bad iter");
+  }
+
+  std::shared_ptr<fir::symbol> funcDef = _symtab.find(node->func());
+  if (funcDef && funcDef->isFunction() ) {
+    std::vector<std::shared_ptr<cdk::basic_type>> argVec;
+    auto ref = cdk::reference_type::cast(node->vec()->type())->referenced();
+    argVec.push_back(ref);
+
+    if (!funcDef->is_argument_types_equal(argVec)) {
+      throw std::string("conflicting declaration for '" + node->func() + "'");
+    }
+  } else {
+    throw std::string("undeclared function '" + node->func() + "'");
+  }
+
+}
+
+void fir::type_checker::do_call_on_node(fir::call_on_node *const node, int lvl) {
+  
+  
+  node->vector()->accept(this, lvl+4);
+  if (!node->vector()->is_typed(cdk::TYPE_POINTER))
+    throw std::string("vector not type pointer");
+
+  auto funcDec = _symtab.find(node->function());
+  if (funcDec && funcDec->isFunction()) {
+    std::vector< std::shared_ptr<cdk::basic_type> > args;
+    auto refType = cdk::reference_type::cast(node->vector()->type())->referenced();
+    args.push_back(refType);
+    if (!funcDec->is_argument_types_equal(args))
+      throw std::string("Function with this arg undeclared");
+    
+  } else {
+    throw std::string("Function undeclared");
+  }
+
+  if (node->from() < 0 || node->to() < 0)
+    throw std::string("invalid range in call on node");
+  
+}
+
 //---------------------------------------------------------------------------
 
 void fir::type_checker::do_if_node(fir::if_node *const node, int lvl) {

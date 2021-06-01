@@ -723,6 +723,139 @@ void fir::postfix_writer::do_while_node(fir::while_node * const node, int lvl) {
   }
 }
 
+void fir::postfix_writer::do_unless_iterate_node(fir::unless_iterate_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+
+  int loopLbl = ++_lbl;
+  int endLbl = ++_lbl;
+  _pf.ALIGN();
+
+  node->condition()->accept(this, lvl);
+  _pf.JNZ(mklbl(endLbl));
+
+  _offset -= 4;
+  int iterVar = _offset;
+  _pf.INT(0);
+  _pf.LOCAL(iterVar);
+  _pf.STINT();
+
+  // iterate
+  _pf.LABEL(mklbl(loopLbl));
+  
+  // check
+  _pf.INT(node->iter());
+  _pf.LOCAL(iterVar);
+  _pf.LDINT();
+  _pf.SUB();
+  _pf.JZ(mklbl(endLbl));
+
+  //vec[i]
+  node->vec()->accept(this, lvl);
+  _pf.LDINT();
+  _pf.LOCAL(iterVar);
+  _pf.LDINT();
+  
+  auto refType = cdk::reference_type::cast(node->vec()->type())->referenced();
+  _pf.INT(refType->size());
+  _pf.MUL();
+  _pf.ADD();
+  if (refType->name() == cdk::TYPE_DOUBLE)
+    _pf.LDDOUBLE();
+  else 
+    _pf.LDINT(); 
+
+  //call
+  _pf.CALL(node->func());
+  _pf.TRASH(refType->size());
+
+  // incr
+  _pf.LOCAL(iterVar);
+  _pf.LDINT();
+  _pf.INT(1);
+  _pf.ADD();
+  _pf.LOCAL(iterVar);
+  _pf.STINT();
+
+  _pf.JMP(mklbl(loopLbl));
+
+  _pf.LABEL(mklbl(endLbl));
+
+  _offset += 4;  // repor
+
+}
+
+void fir::postfix_writer::do_call_on_node(fir::call_on_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+
+  int loopLbl = ++_lbl;
+  int endLbl = ++_lbl;
+
+  // incr var
+  _offset -= 4;
+  int incrVar = _offset;
+
+  // init
+  bool up = node->from() < node->to();
+
+  _pf.INT(node->from());
+  _pf.LOCAL(incrVar);
+  _pf.LDINT();
+
+  // loop
+  _pf.LABEL(mklbl(loopLbl));
+
+  // cond
+  _pf.LOCAL(incrVar);
+  _pf.LDINT();
+
+  _pf.CALL("printi");
+    _pf.CALL("println");
+
+  _pf.INT(node->to());
+  _pf.SUB();
+  _pf.JZ(mklbl(endLbl));
+
+  // vec[i]
+  auto refType = cdk::reference_type::cast(node->vector()->type())->referenced();
+
+  node->vector()->accept(this, lvl);
+  _pf.LDINT();
+  _pf.LOCAL(incrVar);
+  _pf.LDINT();
+  _pf.INT(refType->size());
+  _pf.MUL();
+  _pf.ADD();  
+  if (refType->name() == cdk::TYPE_DOUBLE)
+    _pf.LDDOUBLE();
+  else
+    _pf.LDINT();
+
+  // call
+  _pf.CALL(node->function());
+  _pf.TRASH(refType->size());
+
+  // incr
+  _pf.LOCAL(incrVar);
+  _pf.LDINT();
+  _pf.INT(1);
+  if (up) {
+    std::cerr << "upp we gooo" << std::endl;
+    _pf.ADD();
+  } else 
+    _pf.SUB();
+  // up ? _pf.ADD() : _pf.SUB();
+  _pf.LOCAL(incrVar);
+  _pf.STINT();
+
+  _pf.JMP(mklbl(loopLbl));
+
+  _pf.LABEL(mklbl(endLbl));
+
+  // repor
+  _offset += 4;
+}
+
+
 void fir::postfix_writer::do_restart_node(fir::restart_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
 
